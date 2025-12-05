@@ -10,41 +10,29 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { useWeb3 } from '@/hooks/useWeb3'; // Import the new hook
 
 interface WalletConnectionProps {
   className?: string;
 }
 
 export function WalletConnection({ className }: WalletConnectionProps) {
-  const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const { account, connectWallet, isConnecting } = useWeb3(); // Use real hook
   const [copied, setCopied] = useState(false);
   
-  const mockAddress = '0x1234...5678';
-  const fullAddress = '0x1234567890abcdef1234567890abcdef12345678';
-
-  const handleConnect = async () => {
-    setIsConnecting(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsConnected(true);
-    setIsConnecting(false);
-  };
-
-  const handleDisconnect = () => {
-    setIsConnected(false);
-  };
-
   const handleCopy = () => {
-    navigator.clipboard.writeText(fullAddress);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if(account) {
+      navigator.clipboard.writeText(account);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
-  if (!isConnected) {
+  if (!account) {
     return (
       <Button
         data-testid="button-connect-wallet"
-        onClick={handleConnect}
+        onClick={connectWallet}
         disabled={isConnecting}
         className={cn(
           'bg-gradient-to-r from-gold to-amber-500',
@@ -101,13 +89,13 @@ export function WalletConnection({ className }: WalletConnectionProps) {
           )}
         >
           <div className="w-2 h-2 rounded-full bg-win mr-2 animate-pulse" />
-          {mockAddress}
+          {account.slice(0,6)}...{account.slice(-4)}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="px-2 py-1.5">
           <div className="text-xs text-muted-foreground mb-1">Connected</div>
-          <div className="font-mono text-sm truncate">{fullAddress}</div>
+          <div className="font-mono text-sm truncate">{account}</div>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
@@ -125,13 +113,14 @@ export function WalletConnection({ className }: WalletConnectionProps) {
         <DropdownMenuItem 
           className="cursor-pointer"
           data-testid="link-view-explorer"
+          onClick={() => window.open(`https://etherscan.io/address/${account}`, '_blank')}
         >
           <ExternalLink className="w-4 h-4 mr-2" />
           View on Explorer
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem 
-          onClick={handleDisconnect}
+          onClick={() => window.location.reload()} // Simple disconnect by refresh
           className="cursor-pointer text-destructive focus:text-destructive"
           data-testid="button-disconnect-wallet"
         >
@@ -144,33 +133,11 @@ export function WalletConnection({ className }: WalletConnectionProps) {
 }
 
 export function NetworkIndicator() {
-  const [isWrongNetwork, setIsWrongNetwork] = useState(false);
-
-  if (isWrongNetwork) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-2 px-3 py-1.5 bg-destructive/20 rounded-full border border-destructive/50"
-      >
-        <AlertCircle className="w-4 h-4 text-destructive" />
-        <span className="text-xs font-medium text-destructive">Wrong Network</span>
-        <Button 
-          size="sm" 
-          variant="destructive" 
-          className="h-6 text-xs"
-          onClick={() => setIsWrongNetwork(false)}
-        >
-          Switch
-        </Button>
-      </motion.div>
-    );
-  }
-
+  // Hardcoded for now, but you can expand useWeb3 to check chainId
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 bg-card rounded-full border border-border">
       <div className="w-2 h-2 rounded-full bg-win" />
-      <span className="text-xs font-medium text-muted-foreground">Ethereum</span>
+      <span className="text-xs font-medium text-muted-foreground">Localhost/Testnet</span>
     </div>
   );
 }
